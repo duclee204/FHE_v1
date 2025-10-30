@@ -6,7 +6,6 @@ Lưu public key và secret key riêng biệt
 import tenseal as ts
 import numpy as np
 import pandas as pd
-from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import pickle
@@ -26,10 +25,32 @@ os.makedirs(output_dir, exist_ok=True)
 # ============================================================================
 # Bước 1: Load và chuẩn bị dữ liệu
 # ============================================================================
-print("\n[1] Loading Iris dataset...")
-iris = load_iris()
-X = iris.data
-y = iris.target
+print("\n[1] Loading Iris dataset from local file...")
+
+# Đọc dữ liệu từ file iris.data
+iris_file = 'F:/FHE/iris/iris.data'
+print(f"  - Reading from: {iris_file}")
+
+# Đọc file CSV
+df = pd.read_csv(iris_file, header=None, 
+                 names=['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'class'])
+
+# Tách features và labels
+X = df.iloc[:, :4].values  # 4 features đầu
+y_labels = df.iloc[:, 4].values  # Class labels
+
+# Convert class labels thành số
+class_mapping = {
+    'Iris-setosa': 0,
+    'Iris-versicolor': 1,
+    'Iris-virginica': 2
+}
+y = np.array([class_mapping[label] for label in y_labels])
+
+print(f"✓ Data loaded from local file:")
+print(f"  - Total samples: {len(X)}")
+print(f"  - Features: {X.shape[1]}")
+print(f"  - Classes: {len(np.unique(y))}")
 
 # Chia train/test
 X_train, X_test, y_train, y_test = train_test_split(
@@ -41,21 +62,23 @@ scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-print(f"✓ Data loaded:")
+print(f"✓ Data split:")
 print(f"  - Training: {len(X_train)} samples")
 print(f"  - Testing: {len(X_test)} samples")
-print(f"  - Features: {X_train.shape[1]}")
-print(f"  - Classes: {len(np.unique(y))}")
 
 # Lưu metadata
+feature_names = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width']
+target_names = ['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']
+
 metadata = {
     'dataset': 'Iris',
+    'data_source': iris_file,
     'n_samples_train': len(X_train),
     'n_samples_test': len(X_test),
     'n_features': X_train.shape[1],
     'n_classes': len(np.unique(y)),
-    'feature_names': iris.feature_names,
-    'target_names': iris.target_names.tolist(),
+    'feature_names': feature_names,
+    'target_names': target_names,
     'encrypted_at': datetime.now().isoformat(),
     'encryption_scheme': 'CKKS',
     'poly_modulus_degree': 8192,

@@ -1,30 +1,31 @@
 {
   "dataset": "Iris",
+  "data_source": "F:/FHE/iris/iris.data",
   "n_samples_train": 105,
   "n_samples_test": 45,
   "n_features": 4,
   "n_classes": 3,
   "feature_names": [
-    "sepal length (cm)",
-    "sepal width (cm)",
-    "petal length (cm)",
-    "petal width (cm)"
+    "sepal_length",
+    "sepal_width",
+    "petal_length",
+    "petal_width"
   ],
   "target_names": [
-    "setosa",
-    "versicolor",
-    "virginica"
+    "Iris-setosa",
+    "Iris-versicolor",
+    "Iris-virginica"
   ],
-  "encrypted_at": "2025-10-27T09:52:52.088773",
+  "encrypted_at": "2025-10-30T11:26:28.988292",
   "encryption_scheme": "CKKS",
   "poly_modulus_degree": 8192,
   "scale": 1099511627776,
   "file_sizes": {
-    "secret_key_bytes": 705105,
-    "public_key_bytes": 35478850,
-    "encrypted_train_bytes": 70202453,
-    "encrypted_test_bytes": 30084004,
+    "secret_key_bytes": 705441,
+    "public_key_bytes": 35475960,
+    "encrypted_train_bytes": 70200910,
+    "encrypted_test_bytes": 30082924,
     "original_data_bytes": 6733,
-    "size_overhead": 14894.765631961978
+    "size_overhead": 14894.376058220703
   }
 }

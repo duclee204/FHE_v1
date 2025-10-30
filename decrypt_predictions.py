@@ -51,15 +51,20 @@ print("\n[3] Decrypting predictions with SECRET KEY...")
 
 decrypted_predictions = []
 
-for i, pred_bytes in enumerate(encrypted_pred_bytes):
-    # Deserialize encrypted prediction
-    encrypted_pred = ts.ckks_vector_from(context, pred_bytes)
+for i, pred_list in enumerate(encrypted_pred_bytes):
+    # pred_list is a list of 3 encrypted vectors (one per class)
+    class_scores = []
     
-    # Decrypt
-    decrypted = encrypted_pred.decrypt()
+    for pred_bytes in pred_list:
+        # Deserialize encrypted prediction
+        encrypted_pred = ts.ckks_vector_from(context, pred_bytes)
+        
+        # Decrypt
+        decrypted = encrypted_pred.decrypt()
+        class_scores.append(decrypted[0])  # Get first element (scalar)
     
-    # Get class (argmax of distribution)
-    predicted_class = np.argmax(decrypted)
+    # Get class (argmax of scores)
+    predicted_class = np.argmax(class_scores)
     decrypted_predictions.append(predicted_class)
     
     if (i + 1) % 10 == 0:
