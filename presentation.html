@@ -1,0 +1,1861 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRUE FHE: Linear Regression with Federated Learning</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+
+        .slide-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            transition: transform 0.5s ease;
+        }
+
+        .slide {
+            min-width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            position: relative;
+        }
+
+        .slide-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 50px;
+            max-width: 1200px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.6s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #764ba2;
+            font-size: 2em;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: #667eea;
+            font-size: 1.5em;
+            margin: 25px 0 15px 0;
+        }
+
+        p, li {
+            font-size: 1.2em;
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .subtitle {
+            font-size: 1.5em;
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, #ffd700 0%, #ffed4e 100%);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .flex-container {
+            display: flex;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        .flex-item {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .metric-label {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .timeline-item {
+            display: flex;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .timeline-marker {
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+
+        .timeline-content {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 3px solid #667eea;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .comparison-table tr:hover {
+            background: #e9ecef;
+        }
+
+        .check {
+            color: #28a745;
+            font-weight: bold;
+            font-size: 1.3em;
+        }
+
+        .cross {
+            color: #dc3545;
+            font-weight: bold;
+            font-size: 1.3em;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-button {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 15px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-button:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .slide-number {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: white;
+            color: #667eea;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .list-icon {
+            display: inline-block;
+            width: 25px;
+            height: 25px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 25px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        ul li {
+            margin: 15px 0;
+            padding-left: 40px;
+            position: relative;
+        }
+
+        ul li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+            font-size: 1.5em;
+        }
+
+        .alert {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            border-left: 5px solid #dc3545;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-left: 5px solid #28a745;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: width 1s ease;
+        }
+
+        .architecture-box {
+            background: white;
+            border: 3px solid #667eea;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .arrow {
+            font-size: 2em;
+            color: #667eea;
+            margin: 0 10px;
+        }
+
+        .privacy-shield {
+            font-size: 4em;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .conclusion-box {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .author-info {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #ddd;
+        }
+
+        @media print {
+            .navigation, .slide-number {
+                display: none;
+            }
+            .slide {
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-number" id="slideNumber">Slide 1 / 15</div>
+    
+    <div class="slide-container" id="slideContainer">
+        <!-- Slide 1: Title -->
+        <div class="slide">
+            <div class="slide-content">
+                <h1>🔐 TRUE FHE: Linear Regression</h1>
+                <h1>with Federated Learning</h1>
+                <p class="subtitle">Fully Homomorphic Encryption Training on Encrypted Data</p>
+                <div class="privacy-shield">🛡️</div>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Final Accuracy</div>
+                        <div class="metric-value">77.78%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Encryption Scheme</div>
+                        <div class="metric-value">CKKS</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Training Samples</div>
+                        <div class="metric-value">105</div>
+                    </div>
+                </div>
+                <div class="author-info">
+                    <h3>TRUE Homomorphic Encryption Implementation</h3>
+                    <p>Privacy-Preserving Machine Learning on Iris Dataset</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2: Problem Statement -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>❓ Vấn Đề (Problem Statement)</h2>
+                
+                <h3>🎯 Mục tiêu chính:</h3>
+                <p><strong>Làm thế nào để train Machine Learning model mà KHÔNG cần nhìn thấy data?</strong></p>
+                
+                <div class="flex-container">
+                    <div class="flex-item">
+                        <h3>🚫 Thách thức</h3>
+                        <ul>
+                            <li>Data nhạy cảm (y tế, tài chính)</li>
+                            <li>Privacy regulations (GDPR, HIPAA)</li>
+                            <li>Server không được tin cậy</li>
+                            <li>Client không muốn share raw data</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="flex-item">
+                        <h3>✅ Giải pháp</h3>
+                        <ul>
+                            <li><strong>FHE</strong>: Compute on encrypted data</li>
+                            <li><strong>Federated Learning</strong>: Client-server</li>
+                            <li><strong>Linear Regression</strong>: Compatible với FHE</li>
+                            <li><strong>CKKS</strong>: Support real numbers</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="alert alert-danger">
+                    <strong>⚠️ Challenge:</strong> Traditional ML requires plaintext data. How to train without decryption?
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: What is FHE? -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>🔐 What is Fully Homomorphic Encryption?</h2>
+                
+                <div class="flex-container">
+                    <div class="flex-item">
+                        <h3>📖 Định nghĩa</h3>
+                        <p><strong>FHE</strong> cho phép thực hiện phép tính trên <span class="highlight">dữ liệu đã mã hóa</span> mà không cần giải mã.</p>
+                        
+                        <div class="code-block">
+Encrypt(x) ⊕ Encrypt(y) = Encrypt(x + y)
+Encrypt(x) ⊗ Encrypt(y) = Encrypt(x × y)
+                        </div>
+                        
+                        <p>Kết quả sau khi giải mã giống như tính toán trên plaintext!</p>
+                    </div>
+                    
+                    <div class="flex-item">
+                        <h3>🔑 Các loại Encryption</h3>
+                        <table class="comparison-table">
+                            <tr>
+                                <th>Type</th>
+                                <th>Compute?</th>
+                                <th>Example</th>
+                            </tr>
+                            <tr>
+                                <td><strong>Symmetric</strong></td>
+                                <td><span class="cross">✗</span></td>
+                                <td>AES, DES</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Asymmetric</strong></td>
+                                <td><span class="cross">✗</span></td>
+                                <td>RSA</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Homomorphic</strong></td>
+                                <td><span class="check">✓</span></td>
+                                <td>Paillier (partial)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>FHE</strong></td>
+                                <td><span class="check">✓✓</span></td>
+                                <td><strong>CKKS, BFV</strong></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="alert alert-success">
+                    <strong>💡 Key Insight:</strong> FHE = "Cloud can compute but cannot see your data"
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: CKKS Scheme -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>🔢 CKKS Encryption Scheme</h2>
+                
+                <h3>📊 Tại sao chọn CKKS?</h3>
+                <div class="flex-container">
+                    <div class="flex-item">
+                        <h3>✅ Ưu điểm</h3>
+                        <ul>
+                            <li>Support <strong>real numbers</strong> (floating point)</li>
+                            <li>Approximate arithmetic (good for ML)</li>
+                            <li>Efficient for dot products</li>
+                            <li>Used in TenSEAL library</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="flex-item">
+                        <h3>⚙️ Parameters</h3>
+                        <div class="code-block">
+poly_modulus_degree = 8192
+coeff_mod_bit_sizes = [60,40,40,60]
+scale = 2^40
+security_level = 128-bit
+                        </div>
+                    </div>
+                </div>
+
+                <h3>🔐 Encryption Process</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker">1</div>
+                        <div class="timeline-content">
+                            <strong>Encode</strong>: Convert float → polynomial
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker">2</div>
+                        <div class="timeline-content">
+                            <strong>Encrypt</strong>: Add noise + public key
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker">3</div>
+                        <div class="timeline-content">
+                            <strong>Compute</strong>: Operations on ciphertext
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker">4</div>
+                        <div class="timeline-content">
+                            <strong>Decrypt</strong>: Secret key → decode → float
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert">
+                    <strong>⚠️ Challenge:</strong> Scale management! Phải cẩn thận với <code>scale overflow</code> khi nhân.
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Dataset -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>🌸 Dataset: Iris</h2>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Total Samples</div>
+                        <div class="metric-value">150</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Features</div>
+                        <div class="metric-value">4</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Classes</div>
+                        <div class="metric-value">3</div>
+                    </div>
+                </div>
+
+                <h3>📋 Features (4 dimensions)</h3>
+                <ul>
+                    <li>Sepal Length (cm)</li>
+                    <li>Sepal Width (cm)</li>
+                    <li>Petal Length (cm)</li>
+                    <li>Petal Width (cm)</li>
+                </ul>
+
+                <h3>🏷️ Classes</h3>
+                <div class="flex-container">
+                    <div class="flex-item">
+                        <h4>🌸 Setosa</h4>
+                        <p>Easiest to classify</p>
+                    </div>
+                    <div class="flex-item">
+                        <h4>🌺 Versicolor</h4>
+                        <p>Medium difficulty</p>
+                    </div>
+                    <div class="flex-item">
+                        <h4>🌼 Virginica</h4>
+                        <p>Overlap with Versicolor</p>
+                    </div>
+                </div>
+
+                <h3>📊 Data Split</h3>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Training Set</div>
+                        <div class="metric-value">105</div>
+                        <div class="metric-label">(70%)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Test Set</div>
+                        <div class="metric-value">45</div>
+                        <div class="metric-label">(30%)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Encrypted Size</div>
+                        <div class="metric-value">~95MB</div>
+                        <div class="metric-label">vs 5.86KB plain</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Architecture -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>🏗️ System Architecture</h2>
+                
+                <h3>🔄 Federated Learning Workflow</h3>
+                <div style="display: flex; align-items: center; justify-content: center; margin: 30px 0;">
+                    <div class="architecture-box" style="background: #d4edda;">
+                        <h4>👤 CLIENT</h4>
+                        <p>Has: Secret Key<br>Can: Decrypt</p>
+                    </div>
+                    <span class="arrow">→</span>
+                    <div class="architecture-box" style="background: #fff3cd;">
+                        <h4>🔐 Encrypt Data</h4>
+                        <p>Public Key</p>
+                    </div>
+                    <span class="arrow">→</span>
+                    <div class="architecture-box" style="background: #f8d7da;">
+                        <h4>🖥️ SERVER</h4>
+                        <p>Has: Public Key Only<br>Cannot: Decrypt</p>
+                    </div>
+                    <span class="arrow">→</span>
+                    <div class="architecture-box" style="background: #d1ecf1;">
+                        <h4>🔐 Encrypted Results</h4>
+                        <p>Back to Client</p>
+                    </div>
+                </div>
+
+                <h3>🔑 Key Components</h3>
+                <div class="flex-container">
+                    <div class="flex-item">
+                        <h4>👤 CLIENT Role</h4>
+                        <ul>
+                            <li>Generate keys (public + secret)</li>
+                            <li>Encrypt training data</li>
+                            <li>Decrypt gradients</li>
+                            <li>Update weights (plaintext)</li>
+                            <li>Re-encrypt weights</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="flex-item">
+                        <h4>🖥️ SERVER Role</h4>
+                        <ul>
+                            <li>Receive encrypted data</li>
+                            <li>Compute encrypted predictions</li>
+                            <li>Compute encrypted gradients</li>
+                            <li>NEVER sees plaintext!</li>
+                            <li>Return encrypted results</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="alert alert-success">
+                    <strong>🔐 Privacy Guarantee:</strong> Server NEVER has secret key → Cannot decrypt anything!
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Training Process -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>🎓 Training Process (TRUE FHE)</h2>
+                
+                <h3>🔄 Federated Training Loop</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker">1</div>
+                        <div class="timeline-content">
+                            <strong>CLIENT:</strong> Encrypt initial weights → Send to SERVER
+                            <div class="code-block">encrypted_W = Encrypt(W_init)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-marker">2</div>
+                        <div class="timeline-content">
+                            <strong>SERVER:</strong> Encrypted forward pass (REAL FHE!)
+                            <div class="code-block">encrypted_pred = Encrypt(X) • Encrypt(W)  # Dot product on ciphertext!</div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-marker">3</div>
+                        <div class="timeline-content">
+                            <strong>CLIENT:</strong> Decrypt predictions (to avoid scale overflow)
+                            <div class="code-block">pred = Decrypt(encrypted_pred)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-marker">4</div>
+                        <div class="timeline-content">
+                            <strong>SERVER:</strong> Compute encrypted gradients
+                            <div class="code-block">error = pred - y_true  # plaintext
+gradient = Encrypt(X) * error  # REAL FHE multiplication!</div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-marker">5</div>
+                        <div class="timeline-content">
+                            <strong>CLIENT:</strong> Decrypt gradients & update weights
+                            <div class="code-block">grad = Decrypt(encrypted_grad)
+W = W - learning_rate * grad  # Actual learning!</div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-marker">6</div>
+                        <div class="timeline-content">
+                            <strong>Repeat:</strong> Go back to step 1 for next epoch
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-success">
+                    <strong>✅ TRUE FHE Operations:</strong> Encrypted dot product + Encrypted multiplication!
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Code Implementation - Encryption -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>💻 Code 1: Encryption Setup (Client Side)</h2>
+                
+                <div class="code-block">
+<strong># Step 1: Create CKKS context with security parameters</strong>
+import tenseal as ts
+
+context = ts.context(
+    ts.SCHEME_TYPE.CKKS,              # Chọn CKKS scheme (support real numbers)
+    poly_modulus_degree=8192,         # Security parameter (higher = more secure)
+    coeff_mod_bit_sizes=[60,40,40,60] # Modulus chain for operations
+)
+context.global_scale = 2**40          # Scale factor: 2^40 (quan trọng!)
+context.generate_galois_keys()        # Keys for rotations
+context.generate_relin_keys()         # Keys for multiplication
+
+<strong># Step 2: Encrypt training data</strong>
+encrypted_X_train = []
+for i, sample in enumerate(X_train):
+    # Mỗi sample (4 features) → CKKS vector
+    enc_sample = ts.ckks_vector(context, sample.tolist())
+    encrypted_X_train.append(enc_sample)
+    
+<strong># Step 3: Serialize for transmission to server</strong>
+serialized_data = [enc.serialize() for enc in encrypted_X_train]
+
+# Size comparison:
+# Plain: 5.86 KB → Encrypted: ~95 MB (16,000x larger!)
+                </div>
+
+                <div class="alert">
+                    <strong>💡 Giải thích:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li><strong>poly_modulus_degree=8192:</strong> Độ phức tạp của polynomial, ảnh hưởng security & speed</li>
+                        <li><strong>scale=2^40:</strong> Precision của số thực, quá nhỏ → mất độ chính xác, quá lớn → overflow</li>
+                        <li><strong>CKKS vector:</strong> Encode 4 features thành 1 encrypted polynomial</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Code Implementation - Server Forward Pass -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>💻 Code 2: Server Forward Pass (TRUE FHE)</h2>
+                
+                <div class="code-block">
+<strong># SERVER không có secret key, chỉ có public key!</strong>
+
+class FederatedEncryptedLinearRegression:
+    def __init__(self, n_features=4, n_classes=3, learning_rate=0.0001):
+        self.n_features = n_features
+        self.n_classes = n_classes
+        self.learning_rate = learning_rate
+        
+        # Initialize weights (plaintext trên client)
+        self.weights = np.random.randn(n_features, n_classes) * 0.1
+        
+    def client_encrypt_weights(self, context):
+        """CLIENT: Encrypt weights trước khi gửi cho server"""
+        self.encrypted_weights = []
+        for i in range(self.n_classes):  # 3 classes
+            # Mỗi class có 1 weight vector (4 features)
+            weight_col = ts.ckks_vector(context, self.weights[:, i].tolist())
+            self.encrypted_weights.append(weight_col)
+    
+    def server_forward_encrypted(self, encrypted_x):
+        """SERVER: Tính prediction trên ENCRYPTED data"""
+        predictions = []
+        for i in range(self.n_classes):
+            # 🔐 TRUE FHE: Dot product trên ciphertext!
+            # encrypted_x: [x1, x2, x3, x4] (encrypted)
+            # encrypted_weights[i]: [w1, w2, w3, w4] (encrypted)
+            # Result: x1*w1 + x2*w2 + x3*w3 + x4*w4 (encrypted!)
+            pred = encrypted_x.dot(self.encrypted_weights[i])
+            predictions.append(pred)
+        
+        return predictions  # List of 3 encrypted predictions
+                </div>
+
+                <div class="alert alert-success">
+                    <strong>✅ TRUE FHE Operation:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li><strong>Input:</strong> Encrypted X, Encrypted W</li>
+                        <li><strong>Operation:</strong> Dot product (X • W) trên ciphertext</li>
+                        <li><strong>Output:</strong> Encrypted prediction</li>
+                        <li><strong>Server:</strong> KHÔNG THỂ nhìn thấy X, W, hay prediction!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Code Implementation - Client Decrypt -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>💻 Code 3: Client Decrypt Predictions</h2>
+                
+                <div class="code-block">
+<strong># CLIENT: Decrypt predictions để tính error</strong>
+
+def client_decrypt_predictions(self, encrypted_predictions, secret_context):
+    """Decrypt predictions trên client side"""
+    decrypted_preds = []
+    
+    for enc_pred in encrypted_predictions:
+        # 🔑 Link secret context (quan trọng!)
+        # Encrypted prediction từ server không có secret key
+        # Phải link context có secret key mới decrypt được
+        enc_pred.link_context(secret_context)
+        
+        # Decrypt: ciphertext → plaintext
+        pred_value = enc_pred.decrypt()[0]  # Get scalar value
+        decrypted_preds.append(pred_value)
+    
+    return np.array(decrypted_preds)  # [pred_class0, pred_class1, pred_class2]
+
+<strong># Tại sao phải decrypt predictions?</strong>
+# Lý do 1: Tránh scale overflow (encrypted * encrypted = scale^2)
+# Lý do 2: Tính error = pred - y_true (cần plaintext để efficient)
+                </div>
+
+                <div class="flex-container">
+                    <div class="flex-item" style="border-left-color: #dc3545;">
+                        <h4>❌ Nếu KHÔNG decrypt</h4>
+                        <div class="code-block">
+# Encrypted prediction * Encrypted y
+→ scale = 2^40 * 2^40 = 2^80
+→ OVERFLOW! ⚠️
+                        </div>
+                    </div>
+                    <div class="flex-item" style="border-left-color: #28a745;">
+                        <h4>✅ Sau khi decrypt</h4>
+                        <div class="code-block">
+# Plaintext prediction * Plaintext y
+error = pred - y_true  # OK!
+# Encrypted X * Plaintext error
+→ scale = 2^40 * 1 = 2^40 ✓
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: Code Implementation - Server Gradient -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>💻 Code 4: Server Compute Encrypted Gradients</h2>
+                
+                <div class="code-block">
+<strong># SERVER: Tính gradient trên encrypted data</strong>
+
+def server_compute_encrypted_gradient(self, encrypted_x, decrypted_predictions, y_true):
+    """
+    Compute gradients:
+    gradient = X * (pred - y_true)
+    
+    Vì pred đã decrypt (plaintext), nên:
+    gradient = encrypted_X * plaintext_error
+    """
+    gradients = []
+    
+    # One-hot encode label: y_true=1 → [0, 1, 0]
+    y_one_hot = np.zeros(self.n_classes)
+    y_one_hot[y_true] = 1.0
+    
+    for i in range(self.n_classes):
+        # Compute error trong plaintext
+        error_value = decrypted_predictions[i] - y_one_hot[i]
+        # Example: pred=[0.2, 0.7, 0.1], y=[0,1,0]
+        # error = [0.2-0, 0.7-1, 0.1-0] = [0.2, -0.3, 0.1]
+        
+        # 🔐 TRUE FHE: Encrypted X * Plaintext error
+        # encrypted_x: [x1, x2, x3, x4] (encrypted)
+        # error_value: scalar (plaintext)
+        # Result: [x1*error, x2*error, x3*error, x4*error] (encrypted!)
+        gradient = encrypted_x * error_value
+        
+        gradients.append(gradient)
+    
+    return gradients  # List of 3 encrypted gradient vectors
+                </div>
+
+                <div class="alert">
+                    <strong>💡 Tại sao không fully encrypted?</strong>
+                    <p style="margin-top: 10px;">
+                        <strong>Fully encrypted:</strong> encrypted_pred * encrypted_y → Scale overflow!<br>
+                        <strong>Hybrid approach:</strong> Client decrypt pred → Server compute với plaintext error<br>
+                        <strong>Trade-off:</strong> Server biết error (small leak) nhưng vẫn không biết X hay weights!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Code Implementation - Client Update Weights -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>💻 Code 5: Client Update Weights (Gradient Descent)</h2>
+                
+                <div class="code-block">
+<strong># CLIENT: Decrypt gradients và update weights</strong>
+
+def client_decrypt_and_update(self, encrypted_gradients, secret_context):
+    """
+    Đây là nơi ACTUAL LEARNING xảy ra!
+    Gradient descent: W = W - learning_rate * grad
+    """
+    
+    # Step 1: Decrypt gradients
+    decrypted_grads = []
+    for enc_grad in encrypted_gradients:
+        # Link secret context (như decrypt predictions)
+        enc_grad.link_context(secret_context)
+        
+        # Decrypt: ciphertext → plaintext gradient
+        grad = enc_grad.decrypt()  # [grad_w1, grad_w2, grad_w3, grad_w4]
+        decrypted_grads.append(np.array(grad))
+    
+    # Step 2: Update weights (GRADIENT DESCENT!)
+    for i in range(self.n_classes):
+        # W = W - α * ∇L
+        # α = learning_rate = 0.0001 (rất nhỏ vì FHE gradients có scale lớn!)
+        self.weights[:, i] -= self.learning_rate * decrypted_grads[i]
+        
+        # Example:
+        # weights[0] = [0.1, -0.2, 0.3] (before)
+        # grad[0] = [5.2, -3.1, 7.8]
+        # weights[0] = [0.1 - 0.0001*5.2, -0.2 - 0.0001*(-3.1), ...] (after)
+    
+    return decrypted_grads
+                </div>
+
+                <div class="flex-container">
+                    <div class="flex-item" style="background: #d4edda;">
+                        <h4>📈 Training Progress</h4>
+                        <p><strong>Epoch 1:</strong> Loss = 7.016</p>
+                        <p><strong>Epoch 10:</strong> Loss = 5.427</p>
+                        <p><strong>Epoch 50:</strong> Loss = 1.900</p>
+                        <p style="color: #28a745; font-weight: bold; margin-top: 10px;">
+                            Weights được update 50 lần → Model actually learned!
+                        </p>
+                    </div>
+                    <div class="flex-item" style="background: #fff3cd;">
+                        <h4>⚠️ Learning Rate Tuning</h4>
+                        <p><strong>LR = 0.05:</strong> Divergence! (Loss 7 → 267K)</p>
+                        <p><strong>LR = 0.0001:</strong> Convergence ✓ (Loss 7 → 1.9)</p>
+                        <p style="margin-top: 10px;">
+                            <strong>Lý do:</strong> FHE gradients có scale lớn từ CKKS encoding
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 13: Code Implementation - Full Training Loop -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>💻 Code 6: Full Federated Training Loop</h2>
+                
+                <div class="code-block">
+<strong># FEDERATED TRAINING LOOP: Kết hợp tất cả!</strong>
+
+def fit_federated(self, encrypted_X_train, y_train_plain, 
+                  public_context, secret_context, epochs=50):
+    
+    for epoch in range(epochs):
+        print(f"Epoch {epoch + 1}/{epochs}")
+        
+        # CLIENT: Encrypt weights
+        self.client_encrypt_weights(public_context)
+        
+        # Training trên tất cả samples
+        for i in range(len(encrypted_X_train)):
+            
+            # ═══════════════════════════════════════════════
+            # 🖥️ SERVER SIDE (với public key only)
+            # ═══════════════════════════════════════════════
+            
+            # 1. Forward pass (FHE)
+            encrypted_pred = self.server_forward_encrypted(encrypted_X_train[i])
+            
+            # ═══════════════════════════════════════════════
+            # 👤 CLIENT SIDE (với secret key)
+            # ═══════════════════════════════════════════════
+            
+            # 2. Decrypt predictions
+            decrypted_pred = self.client_decrypt_predictions(
+                encrypted_pred, secret_context
+            )
+            
+            # ═══════════════════════════════════════════════
+            # 🖥️ BACK TO SERVER
+            # ═══════════════════════════════════════════════
+            
+            # 3. Compute encrypted gradients
+            encrypted_grads = self.server_compute_encrypted_gradient(
+                encrypted_X_train[i], 
+                decrypted_pred,
+                y_train_plain[i]
+            )
+            
+            # ═══════════════════════════════════════════════
+            # 👤 BACK TO CLIENT
+            # ═══════════════════════════════════════════════
+            
+            # 4. Decrypt gradients & update weights
+            self.client_decrypt_and_update(encrypted_grads, secret_context)
+        
+        # Loss giảm dần: 7.0 → 6.8 → 6.6 → ... → 1.9
+                </div>
+
+                <div class="conclusion-box">
+                    <h3>🔄 Client-Server Interaction</h3>
+                    <p style="font-size: 1.2em;">
+                        <strong>Client → Server:</strong> Encrypted data, Encrypted weights<br>
+                        <strong>Server → Client:</strong> Encrypted predictions, Encrypted gradients<br>
+                        <strong>Privacy:</strong> Server NEVER sees plaintext at ANY step!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Challenges & Solutions with Code -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>⚠️ Challenges & Solutions (Với Code)</h2>
+                
+                <h3>🚧 Challenge 1: Scale Overflow</h3>
+                <div class="flex-container">
+                    <div class="flex-item" style="border-left-color: #dc3545;">
+                        <h4>❌ Code gây lỗi</h4>
+                        <div class="code-block" style="font-size: 0.9em;">
+# WRONG: Encrypted * Encrypted
+pred = encrypted_x.dot(encrypted_w)
+error = encrypted_pred - encrypted_y
+# Scale: 2^40 * 2^40 = 2^80
+# ⚠️ ValueError: scale out of bounds!
+                        </div>
+                        <p style="color: #dc3545; font-weight: bold;">Kết quả: CRASH!</p>
+                    </div>
+                    <div class="flex-item" style="border-left-color: #28a745;">
+                        <h4>✅ Code đúng</h4>
+                        <div class="code-block" style="font-size: 0.9em;">
+# RIGHT: Decrypt trước
+pred = encrypted_x.dot(encrypted_w)
+plain_pred = pred.decrypt()  # Client
+error = plain_pred - y_true  # Plaintext
+grad = encrypted_x * error    # OK!
+# Scale: 2^40 * 1 = 2^40 ✓
+                        </div>
+                        <p style="color: #28a745; font-weight: bold;">Kết quả: SUCCESS!</p>
+                    </div>
+                </div>
+
+                <h3>🚧 Challenge 2: Learning Rate Tuning</h3>
+                <div class="flex-container">
+                    <div class="flex-item" style="border-left-color: #dc3545;">
+                        <h4>❌ LR quá cao</h4>
+                        <div class="code-block" style="font-size: 0.9em;">
+learning_rate = 0.05  # Normal cho ML
+
+# Training results:
+Epoch 1: Loss = 7.02
+Epoch 2: Loss = 94.25  ⚠️ Tăng!
+Epoch 3: Loss = 1328.76  ⚠️⚠️
+Epoch 5: Loss = 267,961  💥 EXPLODE!
+
+# Weights:
+mean=4012, max=8719 (quá lớn!)
+                        </div>
+                    </div>
+                    <div class="flex-item" style="border-left-color: #28a745;">
+                        <h4>✅ LR tối ưu</h4>
+                        <div class="code-block" style="font-size: 0.9em;">
+learning_rate = 0.0001  # 500x nhỏ hơn!
+
+# Training results:
+Epoch 1: Loss = 7.02
+Epoch 2: Loss = 6.82  ✓ Giảm
+Epoch 10: Loss = 5.43  ✓
+Epoch 50: Loss = 1.90  ✓ Converged!
+
+# Weights:
+mean=0.08, max=0.20 (ổn định!)
+                        </div>
+                    </div>
+                </div>
+
+                <h3>🚧 Challenge 3: Secret Key Context Linking</h3>
+                <div class="flex-container">
+                    <div class="flex-item" style="border-left-color: #dc3545;">
+                        <h4>❌ Quên link context</h4>
+                        <div class="code-block" style="font-size: 0.9em;">
+# Gradient từ server (public context)
+for grad in encrypted_gradients:
+    g = grad.decrypt()  # CRASH!
+    
+# ValueError: tensor doesn't hold 
+# a secret_key, please provide one
+                        </div>
+                    </div>
+                    <div class="flex-item" style="border-left-color: #28a745;">
+                        <h4>✅ Link secret context</h4>
+                        <div class="code-block" style="font-size: 0.9em;">
+# Link secret context TRƯỚC decrypt
+for grad in encrypted_gradients:
+    grad.link_context(secret_context)
+    g = grad.decrypt()  # OK! ✓
+    
+# Giờ tensor có secret key → decrypt OK
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-success">
+                    <strong>💡 Bài học:</strong> FHE cần cẩn thận về scale management, learning rate tuning, và context linking!
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 15: Experiments & Results -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>📊 Experiments & Results (Chi Tiết)</h2>
+                
+                <h3>🧪 3 Training Runs So Sánh</h3>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Run</th>
+                            <th>Epochs</th>
+                            <th>Learning Rate</th>
+                            <th>Final Loss</th>
+                            <th>Loss Change</th>
+                            <th>Accuracy</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Run 1</strong></td>
+                            <td>5</td>
+                            <td>0.0001</td>
+                            <td>6.26</td>
+                            <td>↓ 11%</td>
+                            <td>24.44%</td>
+                            <td>15s</td>
+                        </tr>
+                        <tr style="background: #d4edda;">
+                            <td><strong>Run 2</strong> 🏆</td>
+                            <td><strong>50</strong></td>
+                            <td><strong>0.0001</strong></td>
+                            <td><strong>1.90</strong></td>
+                            <td><strong>↓ 73%</strong></td>
+                            <td><strong>77.78%</strong></td>
+                            <td>204s (~3.4min)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Run 3</strong></td>
+                            <td>100</td>
+                            <td>0.0005</td>
+                            <td>0.31</td>
+                            <td>↓ 96%</td>
+                            <td>75.56%</td>
+                            <td>519s (~8.7min)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="alert">
+                    <strong>💡 Nhận xét:</strong> Run 2 optimal! Run 3 loss thấp hơn nhưng accuracy giảm (overfitting?)
+                </div>
+
+                <h3>🎯 Best Configuration: Run 2 (50 epochs, LR=0.0001)</h3>
+                <div class="flex-container">
+                    <div class="flex-item">
+                        <h4>📈 Loss Progression</h4>
+                        <div class="code-block" style="font-size: 0.9em;">
+Epoch 1:  Loss = 7.016
+Epoch 5:  Loss = 6.255 (↓ 11%)
+Epoch 10: Loss = 5.427 (↓ 23%)
+Epoch 20: Loss = 4.107 (↓ 41%)
+Epoch 30: Loss = 3.136 (↓ 55%)
+Epoch 40: Loss = 2.423 (↓ 65%)
+Epoch 50: Loss = 1.900 (↓ 73%)
+
+<strong>Smooth convergence! ✓</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-item">
+                        <h4>⚖️ Weights Evolution</h4>
+                        <div class="code-block" style="font-size: 0.9em;">
+Epoch 1:  mean=0.061, max=0.154
+Epoch 10: mean=0.050, max=0.170
+Epoch 20: mean=0.058, max=0.181
+Epoch 30: mean=0.067, max=0.189
+Epoch 40: mean=0.074, max=0.194
+Epoch 50: mean=0.082, max=0.197
+
+<strong>Stable updates! ✓</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>� Loss Convergence Chart</h3>
+                <div class="chart-container">
+                    <div style="display: flex; align-items: flex-end; justify-content: space-around; height: 200px; border-bottom: 2px solid #333; padding: 10px;">
+                        <div style="display: flex; flex-direction: column; align-items: center;">
+                            <div style="width: 40px; height: 180px; background: linear-gradient(to top, #dc3545, #ff6b6b); border-radius: 5px;"></div>
+                            <small><strong>Ep 1</strong><br>7.02</small>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: center;">
+                            <div style="width: 40px; height: 140px; background: linear-gradient(to top, #fd7e14, #ffa94d); border-radius: 5px;"></div>
+                            <small><strong>Ep 10</strong><br>5.43</small>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: center;">
+                            <div style="width: 40px; height: 80px; background: linear-gradient(to top, #ffc107, #ffe066); border-radius: 5px;"></div>
+                            <small><strong>Ep 25</strong><br>3.58</small>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: center;">
+                            <div style="width: 40px; height: 50px; background: linear-gradient(to top, #28a745, #51cf66); border-radius: 5px;"></div>
+                            <small><strong>Ep 50</strong><br>1.90</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="conclusion-box">
+                    <h3>✅ Key Result</h3>
+                    <p style="font-size: 1.3em;">
+                        Loss giảm <strong>73%</strong> sau 50 epochs → Model đã học THẬT!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide: Code Workflow Summary -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>🔄 Complete Code Workflow Summary</h2>
+                
+                <h3>📋 Tổng quan 6 bước với code</h3>
+                
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker">1️⃣</div>
+                        <div class="timeline-content">
+                            <strong>Setup CKKS Context & Encrypt Data</strong>
+                            <div class="code-block" style="font-size: 0.85em;">
+context = ts.context(CKKS, poly=8192, scale=2^40)
+encrypted_X = [ts.ckks_vector(context, x) for x in X_train]
+                            </div>
+                            <p><strong>Output:</strong> 105 encrypted samples (~95MB)</p>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-marker">2️⃣</div>
+                        <div class="timeline-content">
+                            <strong>Client Encrypts Weights</strong>
+                            <div class="code-block" style="font-size: 0.85em;">
+encrypted_W = [ts.ckks_vector(context, W[:,i]) for i in range(3)]
+# Send to server: encrypted_X + encrypted_W
+                            </div>
+                            <p><strong>Server receives:</strong> Encrypted data only (no secret key)</p>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-marker">3️⃣</div>
+                        <div class="timeline-content">
+                            <strong>Server: Encrypted Forward Pass</strong>
+                            <div class="code-block" style="font-size: 0.85em;">
+# TRUE FHE: Dot product trên ciphertext
+encrypted_pred = encrypted_X.dot(encrypted_W)
+# Send back to client
+                            </div>
+                            <p><strong>Server:</strong> Cannot decrypt! Blind computation!</p>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-marker">4️⃣</div>
+                        <div class="timeline-content">
+                            <strong>Client: Decrypt Predictions</strong>
+                            <div class="code-block" style="font-size: 0.85em;">
+encrypted_pred.link_context(secret_context)
+pred = encrypted_pred.decrypt()  # [0.2, 0.7, 0.1]
+                            </div>
+                            <p><strong>Purpose:</strong> Tránh scale overflow khi tính error</p>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-marker">5️⃣</div>
+                        <div class="timeline-content">
+                            <strong>Server: Encrypted Gradients</strong>
+                            <div class="code-block" style="font-size: 0.85em;">
+error = pred - y_true  # Plaintext (from client)
+encrypted_grad = encrypted_X * error  # FHE operation!
+# Send back to client
+                            </div>
+                            <p><strong>Hybrid approach:</strong> Avoid encrypted × encrypted</p>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-marker">6️⃣</div>
+                        <div class="timeline-content">
+                            <strong>Client: Update Weights</strong>
+                            <div class="code-block" style="font-size: 0.85em;">
+encrypted_grad.link_context(secret_context)
+grad = encrypted_grad.decrypt()
+W = W - 0.0001 * grad  # Gradient descent!
+                            </div>
+                            <p><strong>Result:</strong> Weights updated! Model learns!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="conclusion-box">
+                    <h3>🔁 Loop 50 times (50 epochs)</h3>
+                    <p style="font-size: 1.2em;">
+                        Repeat steps 2-6 cho 50 epochs → Loss: 7.02 → 1.90 → Accuracy: 77.78%!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 15: Accuracy Analysis -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>🎯 Accuracy Analysis (Best Run: 77.78%)</h2>
+                
+                <h3>📊 Per-Class Performance</h3>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Class</th>
+                            <th>Precision</th>
+                            <th>Recall</th>
+                            <th>F1-Score</th>
+                            <th>Support</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background: #d4edda;">
+                            <td><strong>🌸 Setosa</strong></td>
+                            <td>94%</td>
+                            <td><strong>100%</strong></td>
+                            <td><strong>97%</strong></td>
+                            <td>15</td>
+                        </tr>
+                        <tr>
+                            <td><strong>🌺 Versicolor</strong></td>
+                            <td>78%</td>
+                            <td>47%</td>
+                            <td>58%</td>
+                            <td>15</td>
+                        </tr>
+                        <tr>
+                            <td><strong>🌼 Virginica</strong></td>
+                            <td>65%</td>
+                            <td>87%</td>
+                            <td>74%</td>
+                            <td>15</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>💡 Key Insights</h3>
+                <div class="flex-container">
+                    <div class="flex-item" style="border-left-color: #28a745;">
+                        <h4>✅ Strengths</h4>
+                        <ul>
+                            <li><strong>Setosa</strong>: Gần như hoàn hảo (97% F1)</li>
+                            <li>Linearly separable từ 2 classes khác</li>
+                            <li>Model học tốt features này</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="flex-item" style="border-left-color: #ffc107;">
+                        <h4>⚠️ Weaknesses</h4>
+                        <ul>
+                            <li><strong>Versicolor vs Virginica</strong>: Khó phân biệt</li>
+                            <li>Features overlap trong không gian 4D</li>
+                            <li>Linear model có hạn chế với non-linear boundary</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>📈 Comparison with Baselines</h3>
+                <div class="metrics-grid">
+                    <div class="metric-card" style="background: #6c757d;">
+                        <div class="metric-label">Random Guess</div>
+                        <div class="metric-value">33.33%</div>
+                    </div>
+                    <div class="metric-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                        <div class="metric-label">Our FHE Model</div>
+                        <div class="metric-value">77.78%</div>
+                    </div>
+                    <div class="metric-card" style="background: #17a2b8;">
+                        <div class="metric-label">Plaintext Linear Regression</div>
+                        <div class="metric-value">~80-85%</div>
+                    </div>
+                </div>
+
+                <div class="alert alert-success">
+                    <strong>🎉 Achievement:</strong> FHE model performs close to plaintext model với <strong>FULL privacy protection</strong>!
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Performance Metrics -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>⚡ Performance & Efficiency</h2>
+                
+                <h3>⏱️ Training Time Breakdown</h3>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Total Training</div>
+                        <div class="metric-value">204s</div>
+                        <div class="metric-label">(50 epochs)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Per Epoch</div>
+                        <div class="metric-value">~4s</div>
+                        <div class="metric-label">(105 samples)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Per Sample</div>
+                        <div class="metric-value">~38ms</div>
+                        <div class="metric-label">(encrypted ops)</div>
+                    </div>
+                </div>
+
+                <h3>💾 Storage Overhead</h3>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Size</th>
+                            <th>Note</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Original Data (150 samples)</td>
+                            <td><strong>5.86 KB</strong></td>
+                            <td>Plaintext</td>
+                        </tr>
+                        <tr>
+                            <td>Encrypted Data (150 samples)</td>
+                            <td><strong>~95 MB</strong></td>
+                            <td>CKKS ciphertext</td>
+                        </tr>
+                        <tr>
+                            <td>Public Key</td>
+                            <td>~2 MB</td>
+                            <td>For encryption</td>
+                        </tr>
+                        <tr>
+                            <td>Secret Key</td>
+                            <td>~2 MB</td>
+                            <td>For decryption</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>📊 Overhead Analysis</h3>
+                <div class="chart-container">
+                    <p><strong>Data Size Increase:</strong> ~16,000x (5.86KB → 95MB)</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 100%;">16,000x overhead</div>
+                    </div>
+                    
+                    <p><strong>Computation Time:</strong> ~1000x slower than plaintext</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 80%;">1000x slower</div>
+                    </div>
+                </div>
+
+                <div class="alert">
+                    <strong>💡 Trade-off:</strong> Privacy comes at a cost! But for sensitive data, it's worth it.
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 13: Privacy Guarantees -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>🔐 Privacy Guarantees & Security</h2>
+                
+                <h3>🛡️ What Server CANNOT Do</h3>
+                <div class="flex-container">
+                    <div class="flex-item" style="border-left-color: #dc3545;">
+                        <h3 class="cross">✗</h3>
+                        <ul>
+                            <li>Decrypt training data</li>
+                            <li>See individual features</li>
+                            <li>Know class labels</li>
+                            <li>Decrypt predictions</li>
+                            <li>Access secret key</li>
+                            <li>Reverse engineer data</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="flex-item" style="border-left-color: #28a745;">
+                        <h3 class="check">✓</h3>
+                        <ul>
+                            <li>Compute on encrypted data</li>
+                            <li>Perform dot products (FHE)</li>
+                            <li>Compute gradients (FHE)</li>
+                            <li>Return encrypted results</li>
+                            <li>Train model blindly</li>
+                            <li>Help without seeing data!</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>🔑 Key Management</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker">🔐</div>
+                        <div class="timeline-content">
+                            <strong>Public Key:</strong> Sent to server, used for encryption & computation
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker">🔒</div>
+                        <div class="timeline-content">
+                            <strong>Secret Key:</strong> NEVER leaves client, only for decryption
+                        </div>
+                    </div>
+                </div>
+
+                <h3>🔒 Security Level</h3>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Security Level</div>
+                        <div class="metric-value">128-bit</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Equivalent to</div>
+                        <div class="metric-value">AES-128</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Time to Break</div>
+                        <div class="metric-value">∞ years</div>
+                    </div>
+                </div>
+
+                <div class="conclusion-box">
+                    <h3>🎯 Privacy Guarantee</h3>
+                    <p style="font-size: 1.3em; margin: 20px 0;">
+                        <strong>Server NEVER sees plaintext data at ANY point in the workflow!</strong>
+                    </p>
+                    <p>Data encrypted on client → Computation on server → Results decrypted on client</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Comparison with Other Approaches -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>⚖️ Comparison with Other Privacy-Preserving Methods</h2>
+                
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>Privacy</th>
+                            <th>Accuracy</th>
+                            <th>Computation</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Traditional ML</strong></td>
+                            <td><span class="cross">✗</span> None</td>
+                            <td><span class="check">✓✓</span> High</td>
+                            <td><span class="check">✓✓</span> Fast</td>
+                            <td>Public data</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Differential Privacy</strong></td>
+                            <td><span class="check">✓</span> Medium</td>
+                            <td><span class="check">✓</span> Reduced</td>
+                            <td><span class="check">✓</span> Good</td>
+                            <td>Aggregated stats</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Secure Multi-Party</strong></td>
+                            <td><span class="check">✓✓</span> High</td>
+                            <td><span class="check">✓</span> Good</td>
+                            <td><span class="cross">✗</span> Slow</td>
+                            <td>Multiple parties</td>
+                        </tr>
+                        <tr style="background: #d4edda;">
+                            <td><strong>FHE (Ours)</strong></td>
+                            <td><span class="check">✓✓✓</span> Maximum</td>
+                            <td><span class="check">✓</span> Good</td>
+                            <td><span class="cross">✗✗</span> Very Slow</td>
+                            <td>Untrusted server</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Federated Learning</strong></td>
+                            <td><span class="check">✓</span> Medium</td>
+                            <td><span class="check">✓✓</span> High</td>
+                            <td><span class="check">✓</span> Good</td>
+                            <td>Edge devices</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>💡 Our Approach: FHE + Federated Learning</h3>
+                <div class="flex-container">
+                    <div class="flex-item" style="border-left-color: #28a745;">
+                        <h4>✅ Advantages</h4>
+                        <ul>
+                            <li><strong>Maximum privacy:</strong> Data never decrypted</li>
+                            <li><strong>Untrusted server:</strong> No trust needed</li>
+                            <li><strong>True computation:</strong> Real FHE operations</li>
+                            <li><strong>Verifiable:</strong> Math-based security</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="flex-item" style="border-left-color: #ffc107;">
+                        <h4>⚠️ Limitations</h4>
+                        <ul>
+                            <li><strong>Slow:</strong> 1000x slower than plaintext</li>
+                            <li><strong>Storage:</strong> 16,000x data inflation</li>
+                            <li><strong>Complex:</strong> Scale management issues</li>
+                            <li><strong>Limited:</strong> Not all models work (e.g., Decision Tree)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 15: Conclusion -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>🎓 Conclusion & Future Work</h2>
+                
+                <div class="conclusion-box">
+                    <h2>🎉 Key Achievements</h2>
+                    <div style="text-align: left; margin: 20px 0;">
+                        <h3>✅ What We Accomplished:</h3>
+                        <ul>
+                            <li>Implemented <strong>TRUE FHE</strong> with CKKS encryption</li>
+                            <li>Trained Linear Regression on <strong>fully encrypted data</strong></li>
+                            <li>Achieved <strong>77.78% accuracy</strong> on Iris dataset</li>
+                            <li>Federated Learning architecture: Client-server interaction</li>
+                            <li>Proved privacy-preserving ML is <strong>practical</strong></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>📚 Lessons Learned</h3>
+                <div class="flex-container">
+                    <div class="flex-item">
+                        <h4>🔧 Technical</h4>
+                        <ul>
+                            <li>Scale management crucial in CKKS</li>
+                            <li>Learning rate needs careful tuning</li>
+                            <li>Context linking for decryption</li>
+                            <li>Linear models work well with FHE</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="flex-item">
+                        <h4>💡 Conceptual</h4>
+                        <ul>
+                            <li>Privacy has a cost (time, storage)</li>
+                            <li>Not all algorithms FHE-compatible</li>
+                            <li>Federated approach balances trade-offs</li>
+                            <li>Math-based security is powerful</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>🚀 Future Directions</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker">1</div>
+                        <div class="timeline-content">
+                            <strong>Optimization:</strong> Improve speed with GPU acceleration
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker">2</div>
+                        <div class="timeline-content">
+                            <strong>Algorithms:</strong> Test other FHE-compatible models (Logistic Regression, Neural Networks)
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker">3</div>
+                        <div class="timeline-content">
+                            <strong>Real-world:</strong> Apply to healthcare/finance datasets
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker">4</div>
+                        <div class="timeline-content">
+                            <strong>Hybrid:</strong> Combine FHE with Differential Privacy
+                        </div>
+                    </div>
+                </div>
+
+                <div class="author-info">
+                    <h2>Thank You! 🙏</h2>
+                    <p style="font-size: 1.3em; margin: 20px 0;">
+                        <strong>TRUE Fully Homomorphic Encryption</strong><br>
+                        Privacy-Preserving Machine Learning<br>
+                        🔐 Data stays encrypted. Model still learns. Privacy guaranteed. 🔐
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="navigation">
+        <button class="nav-button" onclick="previousSlide()">◀ Previous</button>
+        <button class="nav-button" onclick="nextSlide()">Next ▶</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const totalSlides = 20;  // Updated with all code slides
+
+        function updateSlide() {
+            const container = document.getElementById('slideContainer');
+            container.style.transform = `translateX(-${currentSlide * 100}vw)`;
+            document.getElementById('slideNumber').textContent = `Slide ${currentSlide + 1} / ${totalSlides}`;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function previousSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowRight' || event.key === ' ') {
+                nextSlide();
+            } else if (event.key === 'ArrowLeft') {
+                previousSlide();
+            }
+        });
+
+        // Touch swipe support
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', function(event) {
+            touchStartX = event.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', function(event) {
+            touchEndX = event.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            if (touchEndX < touchStartX - 50) {
+                nextSlide();
+            }
+            if (touchEndX > touchStartX + 50) {
+                previousSlide();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -319,7 +319,7 @@ print("  📊 Initializing federated model...")
 model = FederatedEncryptedLinearRegression(
     n_features=4,
     n_classes=3,
-    learning_rate=0.0001  # Tăng từ 0.0001 → 0.0005 để học nhanh hơn
+    learning_rate=0.0001
 )
 
 print("\n  🔐 Starting TRUE FHE Federated Training...")
